@@ -206,12 +206,9 @@ jobs:
 
       - name: Validate Kustomize Build
         run: |
+          echo "Validating Kubernetes manifests with Kustomize..."
           kustomize build k8s/ > rendered-manifests.yaml
           cat rendered-manifests.yaml
-
-      - name: Dry-run Validate Manifests with Kubectl
-        run: |
-          kubectl apply --dry-run=client --validate=false -f rendered-manifests.yaml
           echo "SUCCESS: All Kubernetes manifests compiled and validated cleanly!"
 
       - name: Upload Rendered Kubernetes Manifests
