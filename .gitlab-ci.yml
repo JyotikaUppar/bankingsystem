@@ -1,0 +1,118 @@
+stages:
+  - test
+  - security-scan
+  - build-and-version
+  - docker-security-and-publish
+  - k8s-validate
+
+variables:
+  MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dmaven.repo.local=.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version"
+  DOCKER_TLS_CERTDIR: "/certs"
+  IMAGE_TAG: "1.0.${CI_PIPELINE_IID}-${CI_COMMIT_SHORT_SHA}"
+
+# Cache maven dependencies across jobs
+cache:
+  key: "${CI_COMMIT_REF_SLUG}-maven"
+  paths:
+    - .m2/repository
+
+# =============================================================
+# 1. Automated Unit & Integration Tests + Code Coverage
+# =============================================================
+test:
+  stage: test
+  image: eclipse-temurin:21-jdk-alpine
+  before_script:
+    - chmod +x ./mvnw
+  script:
+    - ./mvnw $MAVEN_CLI_OPTS clean verify
+  artifacts:
+    name: "jacoco-coverage-${CI_COMMIT_SHORT_SHA}"
+    when: always
+    expire_in: 14 days
+    paths:
+      - target/site/jacoco/
+      - target/surefire-reports/
+    reports:
+      junit:
+        - target/surefire-reports/TEST-*.xml
+
+# =============================================================
+# 2. Security Scanning: Secret & Dependency (SCA) Scanning
+# =============================================================
+secret-scan:
+  stage: security-scan
+  image:
+    name: zricethezav/gitleaks:latest
+    entrypoint: [""]
+  needs: ["test"]
+  script:
+    - gitleaks detect --verbose --redact
+
+dependency-scan:
+  stage: security-scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  needs: ["test"]
+  script:
+    - trivy fs --exit-code 0 --severity HIGH,CRITICAL --format table .
+  allow_failure: true
+
+# =============================================================
+# 3. Artifact Packaging & Versioning
+# =============================================================
+build-and-version:
+  stage: build-and-version
+  image: eclipse-temurin:21-jdk-alpine
+  needs: ["test", "secret-scan", "dependency-scan"]
+  before_script:
+    - chmod +x ./mvnw
+  script:
+    - echo "Computed Version Tag: ${IMAGE_TAG}"
+    - ./mvnw $MAVEN_CLI_OPTS package -DskipTests
+    - mv target/*.jar target/banking-system-${IMAGE_TAG}.jar
+  artifacts:
+    name: "banking-system-${IMAGE_TAG}"
+    expire_in: 30 days
+    paths:
+      - target/banking-system-${IMAGE_TAG}.jar
+
+# =============================================================
+# 4. Docker Build, Container Security Scan & Image Registry Push
+# =============================================================
+docker-build-scan-publish:
+  stage: docker-security-and-publish
+  image: docker:27-cli
+  services:
+    - docker:27-dind
+  needs: ["build-and-version"]
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+  script:
+    # 1. Build Docker image
+    - docker build -t "$CI_REGISTRY_IMAGE:$IMAGE_TAG" -t "$CI_REGISTRY_IMAGE:latest" .
+    
+    # 2. Scan Docker image for vulnerabilities with Trivy
+    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --exit-code 0 --severity HIGH,CRITICAL "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
+    
+    # 3. Push to GitLab Container Registry
+    - docker push "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
+    - if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then docker push "$CI_REGISTRY_IMAGE:latest"; fi
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+
+# =============================================================
+# 5. Kubernetes Manifest Validation
+# =============================================================
+k8s-validate:
+  stage: k8s-validate
+  image: line/kubectl-kustomize:latest
+  needs: ["docker-build-scan-publish"]
+  script:
+    - echo "Validating Kustomize build..."
+    - kustomize build k8s/ > rendered-manifests.yaml
+    - cat rendered-manifests.yaml
+    - echo "Dry-run validating manifests..."
+    - kubectl apply -k k8s/ --dry-run=client
