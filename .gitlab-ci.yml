@@ -70,9 +70,9 @@ build-and-version:
   before_script:
     - chmod +x ./mvnw
   script:
-    - echo "Computed Version Tag: ${IMAGE_TAG}"
-    - ./mvnw $MAVEN_CLI_OPTS package -DskipTests
-    - mv target/*.jar target/banking-system-${IMAGE_TAG}.jar
+    - 'echo "Computed Version Tag: ${IMAGE_TAG}"'
+    - './mvnw $MAVEN_CLI_OPTS package -DskipTests'
+    - 'mv target/*.jar target/banking-system-${IMAGE_TAG}.jar'
   artifacts:
     name: "banking-system-${IMAGE_TAG}"
     expire_in: 30 days
@@ -89,17 +89,12 @@ docker-build-scan-publish:
     - docker:27-dind
   needs: ["build-and-version"]
   before_script:
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+    - 'echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY'
   script:
-    # 1. Build Docker image
-    - docker build -t "$CI_REGISTRY_IMAGE:$IMAGE_TAG" -t "$CI_REGISTRY_IMAGE:latest" .
-    
-    # 2. Scan Docker image for vulnerabilities with Trivy
-    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --exit-code 0 --severity HIGH,CRITICAL "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
-    
-    # 3. Push to GitLab Container Registry
-    - docker push "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
-    - if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then docker push "$CI_REGISTRY_IMAGE:latest"; fi
+    - 'docker build -t "$CI_REGISTRY_IMAGE:$IMAGE_TAG" -t "$CI_REGISTRY_IMAGE:latest" .'
+    - 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --exit-code 0 --severity HIGH,CRITICAL "$CI_REGISTRY_IMAGE:$IMAGE_TAG"'
+    - 'docker push "$CI_REGISTRY_IMAGE:$IMAGE_TAG"'
+    - 'if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then docker push "$CI_REGISTRY_IMAGE:latest"; fi'
   rules:
     - if: '$CI_COMMIT_BRANCH'
 
@@ -111,8 +106,8 @@ k8s-validate:
   image: line/kubectl-kustomize:latest
   needs: ["docker-build-scan-publish"]
   script:
-    - echo "Validating Kustomize build..."
-    - kustomize build k8s/ > rendered-manifests.yaml
-    - cat rendered-manifests.yaml
-    - echo "Dry-run validating manifests..."
-    - kubectl apply -k k8s/ --dry-run=client
+    - 'echo "Validating Kustomize build..."'
+    - 'kustomize build k8s/ > rendered-manifests.yaml'
+    - 'cat rendered-manifests.yaml'
+    - 'echo "Dry-run validating manifests..."'
+    - 'kubectl apply -k k8s/ --dry-run=client'
