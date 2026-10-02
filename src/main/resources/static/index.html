@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NovaTrust Bank - Modern Core Banking Portal</title>
+  <meta name="description" content="Core Banking Management System Portal for customer accounts, deposits, withdrawals, transfers, and statements.">
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">🏦</div>
+        <div class="brand-info">
+          <h1>NovaTrust</h1>
+          <span class="brand-badge">Core Banking</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-link active" data-tab="dashboard">
+          <span class="nav-icon">📊</span>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-link" data-tab="users">
+          <span class="nav-icon">👥</span>
+          <span>Customers</span>
+        </button>
+        <button class="nav-link" data-tab="accounts">
+          <span class="nav-icon">💳</span>
+          <span>Bank Accounts</span>
+        </button>
+        <button class="nav-link" data-tab="transactions">
+          <span class="nav-icon">💸</span>
+          <span>Transactions</span>
+        </button>
+        <button class="nav-link" data-tab="statement">
+          <span class="nav-icon">📜</span>
+          <span>Account Statement</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="connection-card">
+          <div class="status-indicator">
+            <span class="pulse-dot" id="statusDot"></span>
+            <span id="statusText">Connecting...</span>
+          </div>
+          <button class="api-toggle-btn" id="openSettingsBtn" title="API Settings">⚙️</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="top-header">
+        <div class="header-title-box">
+          <h2 id="pageTitle">Banking Dashboard</h2>
+          <p id="pageSubtitle">Overview of institutional assets, customers, and operations</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary btn-sm" id="seedDemoBtn" title="Pre-fill sample data for presentation">
+            ✨ Seed Demo Data
+          </button>
+          <button class="btn btn-primary btn-sm" id="quickNewUserBtn">
+            ➕ New Customer
+          </button>
+          <button class="btn btn-emerald btn-sm" id="quickNewAccountBtn">
+            💳 Open Account
+          </button>
+          <button class="btn btn-secondary btn-sm" id="refreshBtn" title="Refresh all data">
+            🔄
+          </button>
+        </div>
+      </header>
+
+      <!-- Content Views -->
+      <div class="content-body">
+        
+        <!-- Demo Banner for Presentation -->
+        <div class="demo-banner">
+          <div class="demo-banner-content">
+            <span class="demo-icon">🎓</span>
+            <div>
+              <div class="demo-title">Presentation Demo Mode Ready</div>
+              <div class="demo-desc">Connected directly to the Spring Boot REST API. Use the quick buttons or demo seed to easily showcase operations to the teacher!</div>
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="dismissDemoBanner">Dismiss</button>
+        </div>
+
+        <!-- ==================== 1. DASHBOARD VIEW ==================== -->
+        <div id="tab-dashboard" class="tab-pane active">
+          <!-- Stats Grid -->
+          <div class="stats-grid">
+            <div class="stat-card" style="--card-color: #10b981;">
+              <div class="stat-header">
+                <span class="stat-label">Total Vault Balance</span>
+                <span class="stat-icon" style="color: #10b981;">💰</span>
+              </div>
+              <div class="stat-value" id="statTotalBalance">$0.00</div>
+              <div class="stat-sub">Across all active accounts</div>
+            </div>
+
+            <div class="stat-card" style="--card-color: #6366f1;">
+              <div class="stat-header">
+                <span class="stat-label">Total Customers</span>
+                <span class="stat-icon" style="color: #6366f1;">👥</span>
+              </div>
+              <div class="stat-value" id="statTotalUsers">0</div>
+              <div class="stat-sub">Registered bank clients</div>
+            </div>
+
+            <div class="stat-card" style="--card-color: #06b6d4;">
+              <div class="stat-header">
+                <span class="stat-label">Active Accounts</span>
+                <span class="stat-icon" style="color: #06b6d4;">💳</span>
+              </div>
+              <div class="stat-value" id="statTotalAccounts">0</div>
+              <div class="stat-sub">Savings & Current accounts</div>
+            </div>
+
+            <div class="stat-card" style="--card-color: #f59e0b;">
+              <div class="stat-header">
+                <span class="stat-label">Total Transactions</span>
+                <span class="stat-icon" style="color: #f59e0b;">⚡</span>
+              </div>
+              <div class="stat-value" id="statTotalTransactions">0</div>
+              <div class="stat-sub">Deposits, withdrawals & transfers</div>
+            </div>
+          </div>
+
+          <!-- Quick Banking Shortcuts & Recent Transactions -->
+          <div class="grid-2">
+            <!-- Quick Action Hub -->
+            <div class="glass-panel">
+              <div class="panel-header">
+                <div class="panel-title">
+                  ⚡ Quick Operations
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <button class="btn btn-secondary" onclick="navigateToTab('transactions', 'deposit')" style="padding: 16px; justify-content: flex-start;">
+                  <span style="font-size: 1.4rem;">📥</span>
+                  <div style="text-align: left;">
+                    <div style="font-weight: 700;">Deposit</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Credit funds to account</div>
+                  </div>
+                </button>
+                <button class="btn btn-secondary" onclick="navigateToTab('transactions', 'withdraw')" style="padding: 16px; justify-content: flex-start;">
+                  <span style="font-size: 1.4rem;">📤</span>
+                  <div style="text-align: left;">
+                    <div style="font-weight: 700;">Withdraw</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Debit funds safely</div>
+                  </div>
+                </button>
+                <button class="btn btn-secondary" onclick="navigateToTab('transactions', 'transfer')" style="padding: 16px; justify-content: flex-start;">
+                  <span style="font-size: 1.4rem;">🔁</span>
+                  <div style="text-align: left;">
+                    <div style="font-weight: 700;">Transfer</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Account to account</div>
+                  </div>
+                </button>
+                <button class="btn btn-secondary" onclick="navigateToTab('statement')" style="padding: 16px; justify-content: flex-start;">
+                  <span style="font-size: 1.4rem;">📜</span>
+                  <div style="text-align: left;">
+                    <div style="font-weight: 700;">Statement</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">View & print passbook</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Top Accounts Preview -->
+            <div class="glass-panel">
+              <div class="panel-header">
+                <div class="panel-title">
+                  💳 Featured Accounts
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="navigateToTab('accounts')">View All</button>
+              </div>
+              <div id="dashboardAccountsList" class="bank-cards-grid" style="grid-template-columns: 1fr;">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Transactions Table -->
+          <div class="glass-panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                🕒 Recent Transactions
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="navigateToTab('transactions')">View Full History</button>
+            </div>
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Ref #</th>
+                    <th>Type</th>
+                    <th>Accounts</th>
+                    <th>Amount</th>
+                    <th>Balance After</th>
+                    <th>Date / Time</th>
+                  </tr>
+                </thead>
+                <tbody id="recentTransactionsTableBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== 2. CUSTOMERS VIEW ==================== -->
+        <div id="tab-users" class="tab-pane">
+          <div class="glass-panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                👥 Customer Directory
+                <span class="badge" id="customerCountBadge">0 Customers</span>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <input type="text" id="searchUserInput" class="form-control" placeholder="Search by name, email..." style="width: 240px;">
+                <button class="btn btn-primary btn-sm" id="openAddUserModalBtn">➕ Add Customer</button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Age / Gender</th>
+                    <th>Accounts</th>
+                    <th>Registered</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== 3. BANK ACCOUNTS VIEW ==================== -->
+        <div id="tab-accounts" class="tab-pane">
+          <div class="glass-panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                💳 Customer Accounts
+                <span class="badge" id="accountCountBadge">0 Accounts</span>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <select id="filterAccountType" class="form-control" style="width: 160px;">
+                  <option value="ALL">All Types</option>
+                  <option value="SAVINGS">Savings Only</option>
+                  <option value="CURRENT">Current Only</option>
+                </select>
+                <button class="btn btn-emerald btn-sm" id="openAddAccountModalBtn">➕ Open New Account</button>
+              </div>
+            </div>
+
+            <!-- Digital ATM-style Card Grid -->
+            <div class="bank-cards-grid" id="allAccountsGrid">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== 4. TRANSACTIONS HUB VIEW ==================== -->
+        <div id="tab-transactions" class="tab-pane">
+          <div class="grid-2">
+            <!-- Transaction Action Form -->
+            <div class="glass-panel">
+              <div class="action-subtabs">
+                <button class="action-tab-btn active" data-action="deposit">📥 Deposit</button>
+                <button class="action-tab-btn" data-action="withdraw">📤 Withdraw</button>
+                <button class="action-tab-btn" data-action="transfer">🔁 Transfer</button>
+              </div>
+
+              <!-- Deposit Form -->
+              <form id="depositForm" class="action-form">
+                <div class="form-group">
+                  <label class="form-label" for="depositAccountSelect">Select Target Account</label>
+                  <select id="depositAccountSelect" class="form-control" required>
+                    <option value="">-- Choose Account --</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="depositAmount">Deposit Amount ($)</label>
+                  <input type="number" step="0.01" min="1.0" id="depositAmount" class="form-control" placeholder="e.g. 500.00" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="depositDesc">Description / Note</label>
+                  <input type="text" id="depositDesc" class="form-control" placeholder="e.g. Branch cash deposit">
+                </div>
+                <button type="submit" class="btn btn-emerald" style="width: 100%;">
+                  Confirm Cash Deposit
+                </button>
+              </form>
+
+              <!-- Withdraw Form -->
+              <form id="withdrawForm" class="action-form" style="display: none;">
+                <div class="form-group">
+                  <label class="form-label" for="withdrawAccountSelect">Select Account</label>
+                  <select id="withdrawAccountSelect" class="form-control" required>
+                    <option value="">-- Choose Account --</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="withdrawAmount">Withdraw Amount ($)</label>
+                  <input type="number" step="0.01" min="1.0" id="withdrawAmount" class="form-control" placeholder="e.g. 150.00" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="withdrawDesc">Description / Note</label>
+                  <input type="text" id="withdrawDesc" class="form-control" placeholder="e.g. ATM withdrawal">
+                </div>
+                <button type="submit" class="btn btn-danger" style="width: 100%;">
+                  Process Withdrawal
+                </button>
+              </form>
+
+              <!-- Transfer Form -->
+              <form id="transferForm" class="action-form" style="display: none;">
+                <div class="form-group">
+                  <label class="form-label" for="transferFromSelect">From Account (Source)</label>
+                  <select id="transferFromSelect" class="form-control" required>
+                    <option value="">-- Select Source Account --</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="transferToSelect">To Account (Beneficiary)</label>
+                  <select id="transferToSelect" class="form-control" required>
+                    <option value="">-- Select Destination Account --</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="transferAmount">Transfer Amount ($)</label>
+                  <input type="number" step="0.01" min="1.0" id="transferAmount" class="form-control" placeholder="e.g. 250.00" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="transferDesc">Reference / Note</label>
+                  <input type="text" id="transferDesc" class="form-control" placeholder="e.g. Invoice payment or rent">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                  Execute Wire Transfer
+                </button>
+              </form>
+            </div>
+
+            <!-- Transaction Reference Search -->
+            <div class="glass-panel">
+              <div class="panel-header">
+                <div class="panel-title">
+                  🔍 Look Up Transaction
+                </div>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+                Enter a Transaction Number / Reference (e.g. <code>TXN-171800...</code>) to instantly verify payment record and authenticity.
+              </p>
+              <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <input type="text" id="searchTxnNumberInput" class="form-control" placeholder="Enter Transaction Reference No">
+                <button class="btn btn-primary btn-sm" id="searchTxnBtn">Search</button>
+              </div>
+              <div id="searchTxnResultBox" style="display: none; background: rgba(0,0,0,0.2); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- All Transactions Log -->
+          <div class="glass-panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                📑 System Transaction Ledger
+              </div>
+              <button class="btn btn-secondary btn-sm" id="refreshTxnBtn">Refresh Ledger</button>
+            </div>
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Ref #</th>
+                    <th>Type</th>
+                    <th>Source Account</th>
+                    <th>Destination Account</th>
+                    <th>Amount</th>
+                    <th>Balance Post-Txn</th>
+                    <th>Description</th>
+                    <th>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody id="allTransactionsTableBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== 5. ACCOUNT STATEMENT VIEW ==================== -->
+        <div id="tab-statement" class="tab-pane">
+          <div class="glass-panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                📜 Official Account Statement & Passbook
+              </div>
+            </div>
+            <div class="form-row" style="align-items: flex-end; margin-bottom: 24px;">
+              <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                <label class="form-label" for="statementAccountSelect">Choose Account to Generate Statement</label>
+                <select id="statementAccountSelect" class="form-control">
+                  <option value="">-- Select an account --</option>
+                </select>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" id="generateStatementBtn">
+                  Generate Statement
+                </button>
+                <button class="btn btn-secondary" id="printStatementBtn" style="display: none;">
+                  🖨️ Print / Save PDF
+                </button>
+              </div>
+            </div>
+
+            <!-- Statement Sheet Document -->
+            <div id="statementSheet" class="statement-sheet">
+              <div class="statement-header">
+                <div class="statement-brand">
+                  <h3>NOVATRUST CORE BANK</h3>
+                  <p>Official Transaction Statement & Audit Record</p>
+                </div>
+                <div class="statement-meta" id="statementMetaBox">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+
+              <div id="statementAccountSummary" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; padding: 16px; background: #f8fafc; border-radius: 8px;">
+                <!-- Populated by JS -->
+              </div>
+
+              <table class="statement-table">
+                <thead>
+                  <tr>
+                    <th>Date & Time</th>
+                    <th>Transaction ID</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Running Balance</th>
+                  </tr>
+                </thead>
+                <tbody id="statementTableBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Modal: Create Customer -->
+  <div class="modal-overlay" id="userModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="userModalTitle">Register New Customer</h3>
+        <button class="modal-close" onclick="closeModal('userModal')">&times;</button>
+      </div>
+      <form id="userForm">
+        <input type="hidden" id="editUserId">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="userFirstName">First Name *</label>
+              <input type="text" id="userFirstName" class="form-control" placeholder="John" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="userLastName">Last Name</label>
+              <input type="text" id="userLastName" class="form-control" placeholder="Doe">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="userEmail">Email Address *</label>
+            <input type="email" id="userEmail" class="form-control" placeholder="john.doe@example.com" required>
+          </div>
+
+          <div class="form-group" id="passwordGroup">
+            <label class="form-label" for="userPassword">Password * (Min 6 chars)</label>
+            <input type="password" id="userPassword" class="form-control" placeholder="••••••••" minlength="6" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="userAge">Age * (Min 18)</label>
+              <input type="number" id="userAge" class="form-control" placeholder="25" min="18" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="userGender">Gender</label>
+              <select id="userGender" class="form-control">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="userPhone">Phone Number</label>
+            <input type="text" id="userPhone" class="form-control" placeholder="+1 555-0199">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="userAddress">Residential Address</label>
+            <input type="text" id="userAddress" class="form-control" placeholder="123 Financial Way, Suite 400">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('userModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveUserBtn">Register Customer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Create Account -->
+  <div class="modal-overlay" id="accountModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Open New Bank Account</h3>
+        <button class="modal-close" onclick="closeModal('accountModal')">&times;</button>
+      </div>
+      <form id="accountForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="accountUserSelect">Customer / Account Holder *</label>
+            <select id="accountUserSelect" class="form-control" required>
+              <option value="">-- Choose a Customer --</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="accountTypeSelect">Account Type *</label>
+            <select id="accountTypeSelect" class="form-control" required>
+              <option value="SAVINGS">Savings Account (SAVINGS)</option>
+              <option value="CURRENT">Current / Checking Account (CURRENT)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="initialDepositInput">Initial Deposit Amount ($)</label>
+            <input type="number" step="0.01" min="0" id="initialDepositInput" class="form-control" value="500.00" required>
+            <small style="color: var(--text-dim); font-size: 0.75rem; margin-top: 4px; display: block;">
+              Minimum recommended deposit is $0.00
+            </small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('accountModal')">Cancel</button>
+          <button type="submit" class="btn btn-emerald" id="submitAccountBtn">Open Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: User Profile Detail -->
+  <div class="modal-overlay" id="userDetailModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Customer Profile & Accounts</h3>
+        <button class="modal-close" onclick="closeModal('userDetailModal')">&times;</button>
+      </div>
+      <div class="modal-body" id="userDetailBody">
+        <!-- Populated by JS -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('userDetailModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: API Settings -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">API Connection Settings</h3>
+        <button class="modal-close" onclick="closeModal('settingsModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="apiUrlInput">Backend Base URL</label>
+          <input type="text" id="apiUrlInput" class="form-control" placeholder="http://localhost:8080 (or blank for same-origin)">
+          <small style="color: var(--text-muted); font-size: 0.78rem; display: block; margin-top: 6px;">
+            Leave empty if running directly inside Spring Boot (<code>http://localhost:8080</code>). Set to <code>http://localhost:8080</code> if opening via file preview.
+          </small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('settingsModal')">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveSettingsBtn">Save & Reconnect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Main Application Script -->
+  <script src="app.js"></script>
+</body>
+</html>
