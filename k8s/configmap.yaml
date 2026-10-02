@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: banking-config
+  namespace: banking-system
+  labels:
+    app.kubernetes.io/name: banking-system
+    app.kubernetes.io/component: config
+data:
+  SERVER_PORT: "8080"
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/bank_db"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"

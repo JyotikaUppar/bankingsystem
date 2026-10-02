@@ -1,0 +1,11 @@
+.git
+.gitignore
+.gitattributes
+.idea
+*.iml
+target
+HELP.md
+schema.sql
+k8s
+.github
+*.log
