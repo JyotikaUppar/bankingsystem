@@ -57,7 +57,7 @@ dependency-scan:
     entrypoint: [""]
   needs: ["test"]
   script:
-    - 'trivy fs --exit-code 0 --severity HIGH,CRITICAL --format table .'
+    - 'trivy fs --scanners vuln --offline-scan --severity HIGH,CRITICAL --format table .'
 
 # =============================================================
 # 3. Artifact Packaging & Versioning
