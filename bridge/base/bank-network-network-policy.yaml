@@ -1,0 +1,18 @@
+#! bank-network-network-policy.yaml
+# Generated code, do not edit
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+    name: bank-network-network-policy
+    namespace: bank-management
+spec:
+    podSelector:
+        matchLabels:
+            com.docker.compose.network.bank-network: "true"
+    policyTypes:
+        - Ingress
+    ingress:
+        - from:
+            - podSelector:
+                matchLabels:
+                    com.docker.compose.network.bank-network: "true"

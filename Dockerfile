@@ -5,14 +5,11 @@ FROM eclipse-temurin:21-jdk-alpine AS builder
 
 WORKDIR /build
 
-# Copy Maven wrapper and pom.xml first for efficient layer caching
+# Copy application source code and build directly (avoids slow dependency:go-offline)
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
-RUN chmod +x ./mvnw && ./mvnw dependency:go-offline -B
-
-# Copy application source code and compile
 COPY src/ ./src/
-RUN ./mvnw clean package -DskipTests -B
+RUN chmod +x ./mvnw && ./mvnw clean package -DskipTests -B
 
 # ==========================================
 # Stage 2: Hardened Runtime Image

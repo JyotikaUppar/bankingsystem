@@ -33,7 +33,7 @@ spec:
         fsGroup: 10001
       containers:
         - name: banking-system
-          image: ghcr.io/vighnesh/banking-system:latest
+          image: ghcr.io/jyotika/banking-system:latest
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

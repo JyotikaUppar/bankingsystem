@@ -1,0 +1,54 @@
+#! app-deployment.yaml
+# Generated code, do not edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: app
+    namespace: bank-management
+    labels:
+        com.docker.compose.project: bank_management
+        com.docker.compose.service: app
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            com.docker.compose.project: bank_management
+            com.docker.compose.service: app
+    strategy:
+        type: Recreate
+    template:
+        metadata:
+            labels:
+                com.docker.compose.project: bank_management
+                com.docker.compose.service: app
+                com.docker.compose.network.bank-network: "true"
+        spec:
+            restartPolicy: unless-stopped
+            containers:
+                - name: bank-management-app
+                  image: bank_management-app
+                  imagePullPolicy: IfNotPresent
+                  env:
+                    - name: SERVER_PORT
+                      value: "8080"
+                    - name: SPRING_DATASOURCE_PASSWORD
+                      value: "secureBankPassword123!"
+                    - name: SPRING_DATASOURCE_URL
+                      value: "jdbc:postgresql://postgres:5432/bank_db"
+                    - name: SPRING_DATASOURCE_USERNAME
+                      value: "postgres"
+                    - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+                      value: "update"
+                  livenessProbe:
+                    exec:
+                        command:
+                            - /bin/sh
+                            - -c
+                            - curl -f http://localhost:8080/actuator/health/liveness || exit 1
+                    periodSeconds: 30
+                    initialDelaySeconds: 40
+                    timeoutSeconds: 5
+                    failureThreshold: 3
+                  ports:
+                    - name: app-8080
+                      containerPort: 8080

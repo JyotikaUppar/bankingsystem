@@ -1,0 +1,8 @@
+#! 0-bank-management-namespace.yaml
+# Generated code, do not edit
+apiVersion: v1
+kind: Namespace
+metadata:
+    name: bank-management
+    labels:
+        com.docker.compose.project: bank_management
